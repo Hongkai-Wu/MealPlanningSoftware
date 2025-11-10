@@ -1,0 +1,36 @@
+
+
+  GET|HEAD        / .................................................................................................. 
+  GET|HEAD        confirm-password ........................ password.confirm › Auth\ConfirmablePasswordController@show
+  POST            confirm-password .......................................... Auth\ConfirmablePasswordController@store
+  GET|HEAD        dashboard ................................................................................ dashboard
+  POST            email/verification-notification verification.send › Auth\EmailVerificationNotificationController@st…
+  GET|HEAD        forgot-password ......................... password.request › Auth\PasswordResetLinkController@create
+  POST            forgot-password ............................ password.email › Auth\PasswordResetLinkController@store
+  GET|HEAD        login ........................................... login › Auth\AuthenticatedSessionController@create
+  POST            login .................................................... Auth\AuthenticatedSessionController@store
+  POST            logout ........................................ logout › Auth\AuthenticatedSessionController@destroy
+  POST            meal-records ................................ calendar_entries.store › CalendarEntryController@store
+  DELETE          meal-records/{calendarEntry} ............ calendar_entries.destroy › CalendarEntryController@destroy
+  GET|HEAD        meal_logs ................................................ meal_logs.index › MealLogController@index
+  POST            meal_logs ................................................ meal_logs.store › MealLogController@store
+  GET|HEAD        meal_logs/create ....................................... meal_logs.create › MealLogController@create
+  GET|HEAD        meal_logs/{meal_log} ....................................... meal_logs.show › MealLogController@show
+  PUT|PATCH       meal_logs/{meal_log} ................................... meal_logs.update › MealLogController@update
+  DELETE          meal_logs/{meal_log} ................................. meal_logs.destroy › MealLogController@destroy
+  GET|HEAD        meal_logs/{meal_log}/edit .................................. meal_logs.edit › MealLogController@edit
+  PUT             password .......................................... password.update › Auth\PasswordController@update
+  GET|HEAD        profile ...................................................... profile.edit › ProfileController@edit
+  PATCH           profile .................................................. profile.update › ProfileController@update
+  DELETE          profile ................................................ profile.destroy › ProfileController@destroy
+  GET|HEAD        register ........................................... register › Auth\RegisteredUserController@create
+  POST            register ....................................................... Auth\RegisteredUserController@store
+  POST            reset-password ................................... password.store › Auth\NewPasswordController@store
+  GET|HEAD        reset-password/{token} .......................... password.reset › Auth\NewPasswordController@create
+  GET|HEAD        storage/{path} ....................................................................... storage.local
+  GET|HEAD        up ................................................................................................. 
+  GET|HEAD        verify-email .......................... verification.notice › Auth\EmailVerificationPromptController
+  GET|HEAD        verify-email/{id}/{hash} .......................... verification.verify › Auth\VerifyEmailController
+
+                                                                                                   Showing [31] routes
+
