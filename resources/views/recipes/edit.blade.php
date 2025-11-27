@@ -1,92 +1,124 @@
-<!-- Using the layouts.app template -->
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit recipe | Food Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7f6; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
 
-<!-- Set the page title -->
-@section('title', 'Edit Recipe: ' . $recipe->name)
+@include('partials.navbar', ['active' => 'recipes'])
 
-<!-- Page main content -->
-@section('content')
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-xl mx-auto bg-white dark:bg-gray-800 shadow-xl rounded-lg p-6">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6 border-b pb-2">
-            Edit Recipe
-        </h1>
+<main class="max-w-3xl mx-auto">
+    <div class="bg-white rounded-xl shadow p-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">Edit recipe</h1>
 
-        <!-- Form with CSRF protection and method PUT for updating -->
-        <form action="{{ route('recipes.update', $recipe) }}" method="POST">
+        <form action="{{ route('recipes.update', $recipe) }}" method="POST" class="space-y-4">
             @csrf
             @method('PUT')
 
-            <!-- Recipe Name -->
-            <div class="mb-4">
-                <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Recipe Name:
-                </label>
-                <input 
-                    type="text" 
-                    name="name" 
-                    id="name" 
-                    required 
-                    maxlength="255"
-                    value="{{ old('name', $recipe->name) }}"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white p-3 text-lg"
-                    placeholder="e.g., Grilled Chicken Salad"
-                >
-                @error('name')
-                    <p class="text-red-500 text-xs italic mt-1">{{ $message }}</p>
-                @enderror
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input type="text" name="name" value="{{ old('name', $recipe->name) }}"
+                       class="w-full border rounded px-3 py-2 text-sm" required>
             </div>
 
-            <!-- Calories per serving (kcal) -->
-            <div class="mb-4">
-                <label for="calories_kcal" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Calories per Serving (kcal):
-                </label>
-                <input 
-                    type="number" 
-                    name="calories_kcal" 
-                    id="calories_kcal" 
-                    required 
-                    min="1"
-                    value="{{ old('calories_kcal', $recipe->calories_kcal) }}"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white p-3 text-lg"
-                    placeholder="e.g., 350"
-                >
-                @error('calories_kcal')
-                    <p class="text-red-500 text-xs italic mt-1">{{ $message }}</p>
-                @enderror
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Serving size</label>
+                <input type="text" name="serving_size" value="{{ old('serving_size', $recipe->serving_size) }}"
+                       class="w-full border rounded px-3 py-2 text-sm" required>
             </div>
 
-            <!-- Description -->
-            <div class="mb-6">
-                <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Description (Optional):
-                </label>
-                <textarea 
-                    name="description" 
-                    id="description" 
-                    rows="4"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white p-3 text-lg"
-                    placeholder="Briefly describe the recipe or ingredients."
-                >{{ old('description', $recipe->description) }}</textarea>
-                @error('description')
-                    <p class="text-red-500 text-xs italic mt-1">{{ $message }}</p>
-                @enderror
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Calories (kcal)</label>
+                    <input type="number" step="0.1" min="0" name="calories"
+                           value="{{ old('calories', $recipe->calories) }}"
+                           class="w-full border rounded px-3 py-2 text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Protein (g)</label>
+                    <input type="number" step="0.1" min="0" name="protein"
+                           value="{{ old('protein', $recipe->protein) }}"
+                           class="w-full border rounded px-3 py-2 text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Carbs (g)</label>
+                    <input type="number" step="0.1" min="0" name="carbs"
+                           value="{{ old('carbs', $recipe->carbs) }}"
+                           class="w-full border rounded px-3 py-2 text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Fat (g)</label>
+                    <input type="number" step="0.1" min="0" name="fat"
+                           value="{{ old('fat', $recipe->fat) }}"
+                           class="w-full border rounded px-3 py-2 text-sm" required>
+                </div>
             </div>
 
-            <!-- Submit Buttons -->
-            <div class="flex justify-between items-center">
-                <button 
-                    type="submit" 
-                    class="flex-1 mr-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md transition duration-150 ease-in-out"
-                >
-                    Update Recipe
+            {{-- 碳足迹部分 --}}
+            @php
+                $co2 = $recipe->carbonFootprint->co2_emissions ?? null;
+                $co2Notes = $recipe->carbonFootprint->calculation_notes ?? null;
+            @endphp
+            <div class="mt-4 border-t pt-4">
+                <h2 class="text-sm font-semibold text-gray-700 mb-2">Carbon footprint (optional)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            CO₂ per serving (kg CO₂e)
+                        </label>
+                        <input type="number" step="0.01" min="0" name="co2_emissions"
+                               value="{{ old('co2_emissions', $co2) }}"
+                               class="w-full border rounded px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Notes (optional)
+                        </label>
+                        <input type="text" name="co2_notes"
+                               value="{{ old('co2_notes', $co2Notes) }}"
+                               class="w-full border rounded px-3 py-2 text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Description (optional)
+                </label>
+                <textarea name="description" rows="3"
+                          class="w-full border rounded px-3 py-2 text-sm">{{ old('description', $recipe->description) }}</textarea>
+            </div>
+
+            <div class="flex items-center space-x-4 mt-4">
+                <button type="submit"
+                        class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-green-700">
+                    Save changes
                 </button>
-                <a href="{{ route('recipes.index') }}" class="flex-1 ml-2 text-center px-4 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold rounded-lg shadow-md transition duration-150 ease-in-out">
+                <a href="{{ route('recipes.index') }}"
+                   class="text-sm text-gray-600 hover:underline">
                     Cancel
-                </a>
+                </a >
             </div>
+
+            @if($errors->any())
+                <div class="mt-3 text-sm text-red-600">
+                    <ul class="list-disc list-inside">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
         </form>
     </div>
-</div>
-@endsection
+</main>
+
+</body>
+</html>

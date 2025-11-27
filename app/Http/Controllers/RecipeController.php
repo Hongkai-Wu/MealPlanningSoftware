@@ -1,131 +1,151 @@
-/**
- * Class RecipeController
- * 用于处理食谱的 CRUD 操作 (Create, Read, Update, Delete)。
- * 这是一个 API Controller，所有返回值为 JSON 响应。
- * @package App\Http\Controllers
- */
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Recipe;
+use App\Models\CarbonFootprint;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
 class RecipeController extends Controller
 {
-    /**
-     * 规则定义了食谱数据存储时的格式要求。
-     * @var array<string, string>
-     */
-    private array $validationRules = [
-        'name' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'ingredients' => 'nullable|string',
-        'instructions' => 'nullable|string',
-        'estimated_time' => 'required|integer|min:1',
-        'calories_kcal' => 'required|numeric|min:0',
-        'protein_g' => 'required|numeric|min:0',
-        'fat_g' => 'required|numeric|min:0',
-        'carbohydrates_g' => 'required|numeric|min:0',
-        'fiber_g' => 'required|numeric|min:0',
-        'carbon_footprint_g' => 'required|numeric|min:0',
-    ];
-
-    /**
-     * 获取当前用户的所有食谱。
-     */
     public function index()
     {
-        // 确保用户已登录，否则返回 401 未授权
-        if (!Auth::check()) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
-        }
+        $recipes = Recipe::where('user_id', Auth::id())
+            ->with('carbonFootprint')
+            ->orderBy('name')
+            ->get();
 
-        // 获取当前用户创建的所有食谱
-        $recipes = Auth::user()->recipes()->get();
-
-        return response()->json([
-            'message' => 'Recipes retrieved successfully.',
-            'data' => $recipes
-        ], 200);
+        return view('recipes.index', compact('recipes'));
     }
 
-    /**
-     * 存储一个新的食谱。
-     * * @param Request $request
-     * @throws ValidationException
-     */
+    public function create()
+    {
+        return view('recipes.create');
+    }
+
     public function store(Request $request)
     {
-        // 确保用户已登录
-        if (!Auth::check()) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+        $data = $request->validate([
+            'name'         => ['required', 'string', 'max:255'],
+            'serving_size' => ['required', 'string', 'max:255'],
+            'calories'     => ['required', 'numeric', 'min:0'],
+            'protein'      => ['required', 'numeric', 'min:0'],
+            'carbs'        => ['required', 'numeric', 'min:0'],
+            'fat'          => ['required', 'numeric', 'min:0'],
+            'description'  => ['nullable', 'string'],
+
+            // 新增：碳足迹字段（可选）
+            'co2_emissions'    => ['nullable', 'numeric', 'min:0'],
+            'co2_notes'        => ['nullable', 'string'],
+        ]);
+
+        $recipe = Recipe::create([
+            'user_id'      => Auth::id(),
+            'name'         => $data['name'],
+            'serving_size' => $data['serving_size'],
+            'calories'     => $data['calories'],
+            'protein'      => $data['protein'],
+            'carbs'        => $data['carbs'],
+            'fat'          => $data['fat'],
+            'description'  => $data['description'] ?? null,
+        ]);
+
+        // 如果填写了 CO2，则创建碳足迹记录
+        if (!empty($data['co2_emissions'])) {
+            CarbonFootprint::create([
+                'recipe_id'        => $recipe->id,
+                'co2_emissions'    => $data['co2_emissions'],
+                'measurement_unit' => 'kg',  // 约定为 kg CO2e per serving
+                'calculation_notes'=> $data['co2_notes'] ?? null,
+            ]);
         }
 
-        // 验证请求数据
-        $validatedData = $request->validate($this->validationRules);
-
-        // 创建食谱，并自动关联当前用户ID
-        $recipe = Auth::user()->recipes()->create($validatedData);
-
-        return response()->json([
-            'message' => 'Recipe created successfully.',
-            'data' => $recipe
-        ], 201); // 201 Created 状态码
+        return redirect()
+            ->route('recipes.index')
+            ->with('success', 'Recipe created successfully.');
     }
 
-    /**
-     * 显示单个食谱的详细信息。
-     *
-     * @param Recipe $recipe
-     */
-    public function show(Recipe $recipe)
+    public function edit(Recipe $recipe)
     {
-        // 允许所有登录用户查看任何食谱
-        if (!Auth::check()) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
-        }
+        $this->authorizeRecipe($recipe);
 
-        return response()->json([
-            'message' => 'Recipe retrieved successfully.',
-            'data' => $recipe
-        ], 200);
+        $recipe->load('carbonFootprint');
+
+        return view('recipes.edit', compact('recipe'));
     }
 
-    /**
-     * 更新指定的食谱。
-     *
-     * @param Request $request
-     * @param Recipe $recipe
-     * @throws ValidationException
-     */
     public function update(Request $request, Recipe $recipe)
     {
-        // 授权检查：确保当前用户是食谱的所有者 (使用 Gate 检查)
-        if (Gate::denies('manage-recipe', $recipe)) {
-            return response()->json(['message' => 'Unauthorized. You do not own this recipe.'], 403);
+        $this->authorizeRecipe($recipe);
+
+        $data = $request->validate([
+            'name'         => ['required', 'string', 'max:255'],
+            'serving_size' => ['required', 'string', 'max:255'],
+            'calories'     => ['required', 'numeric', 'min:0'],
+            'protein'      => ['required', 'numeric', 'min:0'],
+            'carbs'        => ['required', 'numeric', 'min:0'],
+            'fat'          => ['required', 'numeric', 'min:0'],
+            'description'  => ['nullable', 'string'],
+
+            'co2_emissions'    => ['nullable', 'numeric', 'min:0'],
+            'co2_notes'        => ['nullable', 'string'],
+        ]);
+
+        $recipe->update([
+            'name'         => $data['name'],
+            'serving_size' => $data['serving_size'],
+            'calories'     => $data['calories'],
+            'protein'      => $data['protein'],
+            'carbs'        => $data['carbs'],
+            'fat'          => $data['fat'],
+            'description'  => $data['description'] ?? null,
+        ]);
+
+        // 处理碳足迹
+        $co2 = $data['co2_emissions'] ?? null;
+        $notes = $data['co2_notes'] ?? null;
+
+        if ($co2 !== null && $co2 !== '') {
+            if ($recipe->carbonFootprint) {
+                $recipe->carbonFootprint->update([
+                    'co2_emissions'    => $co2,
+                    'calculation_notes'=> $notes,
+                ]);
+            } else {
+                CarbonFootprint::create([
+                    'recipe_id'        => $recipe->id,
+                    'co2_emissions'    => $co2,
+                    'measurement_unit' => 'kg',
+                    'calculation_notes'=> $notes,
+                ]);
+            }
+        } else {
+            // 如果不再填写 CO2，就删除旧记录（保持数据干净）
+            if ($recipe->carbonFootprint) {
+                $recipe->carbonFootprint->delete();
+            }
         }
-        
-        // 验证请求数据
-        $validatedData = $request->validate($this->validationRules);
 
-        $recipe->update($validatedData);
-
-        return response()->json([
-            'message' => 'Recipe updated successfully.',
-            'data' => $recipe
-        ], 200);
+        return redirect()
+            ->route('recipes.index')
+            ->with('success', 'Recipe updated successfully.');
     }
 
-    /**
-     * 删除指定的食谱。
-     *
-     * @param Recipe $recipe
-     */
     public function destroy(Recipe $recipe)
     {
-        // 授权检查：确保当前用户是食谱的所有者 (使用 Gate 检查)
-        if (Gate::denies('manage-recipe', $recipe)) {
-            return response()->json(['message' => 'Unauthorized. You do not own this recipe.'], 403);
-        }
-        
+        $this->authorizeRecipe($recipe);
         $recipe->delete();
 
-        return response()->json([
-            'message' => 'Recipe deleted successfully.'
-        ], 204); // 204 No Content 状态码
+        return redirect()
+            ->route('recipes.index')
+            ->with('success', 'Recipe deleted successfully.');
+    }
+
+    protected function authorizeRecipe(Recipe $recipe)
+    {
+        if ($recipe->user_id !== Auth::id()) {
+            abort(403);
+        }
     }
 }

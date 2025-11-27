@@ -5,38 +5,41 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-/**
- * 用户目标模型 (User Goal Model)
- * 对应数据库中的 user_goals 表
- */
 class UserGoal extends Model
 {
     use HasFactory;
 
+    protected $table = 'user_goals';
+
     /**
-     * 可批量赋值的属性 (Mass assignable attributes)
-     * @var array<int, string>
+     * 与数据库字段一致的 fillable
      */
     protected $fillable = [
         'user_id',
-        'nutrient_id',
+        'goal_type',     // protein, calories, carbs, fat, fiber, co2_emissions
         'target_value',
-        'target_type', // 例如: 'min' (最小), 'max' (最大)
+        'direction',     // up / down
+        'unit',          // g, kcal, mg, kg CO2e
+        'start_date',
+        'end_date',
+        'is_active',
     ];
 
     /**
-     * 获取设置该目标的用户 (Get the user that owns the goal)
+     * 字段类型转换
+     */
+    protected $casts = [
+        'target_value' => 'float',
+        'is_active'    => 'boolean',
+        'start_date'   => 'date',
+        'end_date'     => 'date',
+    ];
+
+    /**
+     * 一个目标属于一个用户
      */
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * 获取目标对应的营养成分 (Get the nutrient associated with the goal)
-     */
-    public function nutrient()
-    {
-        return $this->belongsTo(Nutrient::class);
     }
 }

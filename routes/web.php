@@ -1,52 +1,58 @@
-
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CalendarEntryController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MealLogController;
+use App\Http\Controllers\CalendarEntryController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RecipeController;
+use App\Http\Controllers\GoalController;
+use App\Http\Controllers\BiometricController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
 */
 
-// Default route
 Route::get('/', function () {
     return view('welcome');
 });
 
-// Authenticated Routes (Protected by 'auth' middleware)
-// 使用资源路由 (Route::resource) 替换了之前手动定义的 MealLog 路由
 Route::middleware(['auth'])->group(function () {
-    
-    // Dashboard Route
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
 
-    // User Profile Routes 
+    // 仪表盘
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
+
+    // 用户资料
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+  
+     // Meal Plan 页面（查看 + 添加计划）
+    Route::get('/meal-plan', [CalendarEntryController::class, 'index'])
+        ->name('meal_plan.index');
 
+   
 
-    // Calendar Entry Related Routes
+    // 日历（Meal Plan 将来用）
     Route::post('/meal-records', [CalendarEntryController::class, 'store'])
         ->name('calendar_entries.store');
-
     Route::delete('/meal-records/{calendarEntry}', [CalendarEntryController::class, 'destroy'])
         ->name('calendar_entries.destroy');
 
-    // Meal Logs Routes - 资源路由，包含了 CRUD 所需的所有 7 个动作 (index, create, store, show, edit, update, destroy)
+    // Meal Logs（实际吃的东西）
     Route::resource('meal_logs', MealLogController::class);
 
+    // 食谱管理
+    Route::resource('recipes', RecipeController::class)->except(['show']);
+
+    // 目标管理
+    Route::resource('goals', GoalController::class)->except(['show']);
 });
 
-require __DIR__.'/auth.php';
+    // Biometrics（体重、血压等）
+    Route::resource('biometrics', BiometricController::class)->except(['show']);
+
+require __DIR__ . '/auth.php';

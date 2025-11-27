@@ -1,114 +1,82 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Logs | Food Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7f6; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+@include('partials.navbar', ['active' => 'meal_logs'])
 
-@section('content')
-<div class="container mx-auto px-4 py-8">
-  <div class="max-w-4xl mx-auto">
+<main class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl shadow p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h1 class="text-2xl font-bold text-gray-800">Meal Logs</h1>
+            <a href="{{ route('meal_logs.create') }}"
+               class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-green-700">
+                Add meal log
+            </a>
+        </div>
 
-    @if(session('success'))
-      <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-        <span class="block sm:inline">{{ session('success') }}</span>
-      </div>
-    @endif
-    @if(session('error'))
-      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-        <span class="block sm:inline">{{ session('error') }}</span>
-      </div>
-    @endif
-
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold">Meal Logs</h1>
-      <a href="{{ route('meal_logs.create') }}"
-   class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-  Log a Meal
-</a>
-
-    </div>
-
-    <div class="grid md:grid-cols-2 gap-6 mb-8">
-      <div class="bg-white shadow rounded p-4">
-        <h2 class="font-semibold mb-3">Today’s Totals</h2>
-        <ul class="space-y-1 text-sm">
-          <li>Calories: {{ $todayNutrition['calories'] ?? 0 }} kcal</li>
-          <li>Protein: {{ $todayNutrition['protein'] ?? 0 }} g</li>
-          <li>Carbs: {{ $todayNutrition['carbs'] ?? 0 }} g</li>
-          <li>Fat: {{ $todayNutrition['fat'] ?? 0 }} g</li>
-          <li>Fiber: {{ $todayNutrition['fiber'] ?? 0 }} g</li>
-          <li>Sugar: {{ $todayNutrition['sugar'] ?? 0 }} g</li>
-          <li>Sodium: {{ $todayNutrition['sodium'] ?? 0 }} mg</li>
-        </ul>
-      </div>
-
-      <div class="bg-white shadow rounded p-4">
-        <h2 class="font-semibold mb-3">Goal Status</h2>
-        @forelse($goalsResult as $g)
-          <div class="flex justify-between border-b py-1 text-sm">
-            <span>{{ strtoupper($g['metric']) }} ({{ $g['direction']==='up' ? '≥' : '≤' }} {{ $g['target'] }} {{ $g['unit'] }})</span>
-            <span>
-              {{ $g['current'] }} {{ $g['unit'] }} ·
-              @if($g['status']==='ok')
-                <span class="text-green-600">OK</span>
-              @elseif($g['status']==='deficit')
-                <span class="text-yellow-600">-{{ $g['delta'] }} {{ $g['unit'] }}</span>
-              @else
-                <span class="text-red-600">+{{ $g['delta'] }} {{ $g['unit'] }}</span>
-              @endif
-            </span>
-          </div>
-        @empty
-          <em class="text-gray-500 text-sm">No goals set.</em>
-        @endforelse
-      </div>
-    </div>
-
-    <div class="bg-white shadow rounded">
-      <div class="p-4 border-b">
-        <h2 class="font-semibold">All Logs</h2>
-      </div>
-      <div class="p-4">
-        @if ($entries->isEmpty())
-          <em class="text-gray-500">No logs yet.</em>
-        @else
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-              <thead>
-                <tr class="text-left border-b">
-                  <th class="py-2 pr-3">Date</th>
-                  <th class="py-2 pr-3">Meal</th>
-                  <th class="py-2 pr-3">Recipe</th>
-                  <th class="py-2 pr-3">Servings</th>
-                  <th class="py-2 pr-3">Calories</th>
-                  <th class="py-2 pr-3">Protein</th>
-                  <th class="py-2 pr-3">Carbs</th>
-                  <th class="py-2 pr-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                @foreach($entries as $e)
-                  @php($n = $e->nutrition)
-                  <tr class="border-b">
-                    <td class="py-2 pr-3">{{ $e->date->toDateString() }}</td>
-                    <td class="py-2 pr-3">{{ $e->meal_type }}</td>
-                    <td class="py-2 pr-3">{{ $e->recipe->name ?? 'Unknown' }}</td>
-                    <td class="py-2 pr-3">{{ $e->servings }}</td>
-                    <td class="py-2 pr-3">{{ $n['calories'] }}</td>
-                    <td class="py-2 pr-3">{{ $n['protein'] }}</td>
-                    <td class="py-2 pr-3">{{ $n['carbs'] }}</td>
-                    <td class="py-2 pr-3">
-                      <form method="POST" action="{{ route('meal_logs.destroy', $e) }}"
-                            onsubmit="return confirm('Delete this log?')">
-                        @csrf @method('DELETE')
-                        <button class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">Delete</button>
-                      </form>
-                    </td>
-                  </tr>
-                @endforeach
-              </tbody>
-            </table>
-          </div>
+        @if(session('success'))
+            <div class="mb-4 text-sm text-green-700 bg-green-50 border border-green-200 px-3 py-2 rounded">
+                {{ session('success') }}
+            </div>
         @endif
-      </div>
-    </div>
 
-  </div>
-</div>
-@endsection
+        @if($mealLogs->isEmpty())
+            <p class="text-sm text-gray-500">You have no meal logs yet.</p>
+        @else
+            <table class="min-w-full text-sm">
+                <thead>
+                <tr class="border-b">
+                    <th class="text-left py-2">Time</th>
+                    <th class="text-left py-2">Recipe</th>
+                    <th class="text-left py-2">Servings</th>
+                    <th class="text-left py-2">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach($mealLogs as $log)
+                    <tr class="border-b">
+                        <td class="py-2">
+                            {{ $log->consumed_at?->format('Y-m-d H:i') }}
+                        </td>
+                        <td class="py-2">
+                            {{ $log->recipe?->name ?? 'N/A' }}
+                        </td>
+                        <td class="py-2">
+                            {{ $log->servings_consumed }}
+                        </td>
+                        <td class="py-2">
+                            <a href="{{ route('meal_logs.edit', $log) }}"
+                               class="text-blue-600 hover:underline text-xs mr-3">
+                                Edit
+                            </a>
+                            <form action="{{ route('meal_logs.destroy', $log) }}"
+                                  method="POST"
+                                  class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        class="text-xs text-red-600 hover:underline"
+                                        onclick="return confirm('Delete this log?')">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        @endif
+    </div>
+</main>
+
+</body>
+</html>

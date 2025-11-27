@@ -2,134 +2,124 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Goal;
-use App\Models\Nutrient; // 假设您有一个 Nutrient 模型
-use App\Http\Requests\GoalRequest; // 引入我们创建的验证请求
-use Illuminate\Support\Facades\Auth;
+use App\Models\UserGoal;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class GoalController extends Controller
 {
-    /**
-     * 显示当前用户的所有目标列表。
-     *
-     * @return \Illuminate\View\View
-     */
+    // 列出当前用户的所有目标
     public function index()
     {
-        // 仅获取当前认证用户设定的目标，并按ID降序排列（最新创建的在前面）
-        $goals = Goal::with('nutrient')
-                    ->where('user_id', Auth::id())
-                    ->latest()
-                    ->get();
+        $user = Auth::user();
 
-        // 假设视图文件名为 goals.index
-        return view('goals.index', compact('goals'));
-    }
+        $goals = UserGoal::where('user_id', $user->id)
+            ->orderBy('goal_type')
+            ->get();
 
-    /**
-     * 显示创建新目标的表单。
-     *
-     * @return \Illuminate\View\View
-     */
-    public function create()
-    {
-        // 获取所有可供选择的营养素，用于表单中的下拉菜单
-        $nutrients = Nutrient::all(['id', 'name', 'unit']);
+        // 为了在下拉框里用
+        $goalTypes = [
+            'calories' => 'Calories',
+            'protein'  => 'Protein',
+            'carbs'    => 'Carbohydrates',
+            'fat'      => 'Fat',
+            'fiber'    => 'Fiber',
+            'co2'      => 'Carbon footprint',
+        ];
 
-        // 假设视图文件名为 goals.create_or_edit
-        return view('goals.create_or_edit', [
-            'nutrients' => $nutrients,
-            'goal' => new Goal(), // 传递一个空的 Goal 实例用于创建
-            'mode' => 'create' // 明确告诉视图当前是创建模式
+        return view('goals.index', [
+            'user'      => $user,
+            'goals'     => $goals,
+            'goalTypes' => $goalTypes,
         ]);
     }
 
-    /**
-     * 存储新创建的目标。
-     *
-     * @param  \App\Http\Requests\GoalRequest  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function store(GoalRequest $request)
+    // 处理“新建目标”提交
+    public function store(Request $request)
     {
-        // GoalRequest 已经自动处理了所有输入验证
+        $user = Auth::user();
 
-        $data = $request->validated();
-        
-        // 自动将当前用户的 ID 注入到数据中，确保目标属于当前用户
-        $data['user_id'] = Auth::id();
-
-        Goal::create($data);
-
-        return redirect()
-            ->route('goals.index') // 重定向到目标列表页
-            ->with('success', '目标创建成功！'); // 附加成功的消息
-    }
-
-    /**
-     * 显示编辑指定目标的表单。
-     *
-     * @param  \App\Models\Goal  $goal
-     * @return \Illuminate\View\View
-     */
-    public function edit(Goal $goal)
-    {
-        // 策略：确保该目标属于当前用户，防止越权访问
-        if ($goal->user_id !== Auth::id()) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        // 获取所有可供选择的营养素
-        $nutrients = Nutrient::all(['id', 'name', 'unit']);
-
-        // 假设视图文件名为 goals.create_or_edit
-        return view('goals.create_or_edit', [
-            'nutrients' => $nutrients,
-            'goal' => $goal,
-            'mode' => 'edit' // 明确告诉视图当前是编辑模式
+        $data = $request->validate([
+            'goal_type'    => 'required|string',
+            'target_value' => 'required|numeric',
+            'direction'    => 'required|in:up,down',
+            'unit'         => 'required|string|max:20',
+            'start_date'   => 'required|date',
+            'end_date'     => 'nullable|date|after_or_equal:start_date',
+            'is_active'    => 'nullable',
         ]);
-    }
 
-    /**
-     * 更新指定目标。
-     *
-     * @param  \App\Http\Requests\GoalRequest  $request
-     * @param  \App\Models\Goal  $goal
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function update(GoalRequest $request, Goal $goal)
-    {
-        // 策略：再次检查目标所有权
-        if ($goal->user_id !== Auth::id()) {
-            abort(403, 'Unauthorized action.');
-        }
+        $data['user_id']  = $user->id;
+        $data['is_active'] = $request->boolean('is_active');
 
-        // GoalRequest 已经自动处理了所有输入验证
-        $goal->update($request->validated());
+        UserGoal::create($data);
 
         return redirect()
             ->route('goals.index')
-            ->with('success', '目标更新成功！');
+            ->with('success', 'Goal created successfully.');
     }
 
-    /**
-     * 删除指定目标。
-     *
-     * @param  \App\Models\Goal  $goal
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function destroy(Goal $goal)
+    // 显示编辑表单
+    public function edit(UserGoal $goal)
     {
-        // 策略：再次检查目标所有权
-        if ($goal->user_id !== Auth::id()) {
-            abort(403, 'Unauthorized action.');
-        }
-        
+        $this->authorizeGoal($goal);
+
+        $goalTypes = [
+            'calories' => 'Calories',
+            'protein'  => 'Protein',
+            'carbs'    => 'Carbohydrates',
+            'fat'      => 'Fat',
+            'fiber'    => 'Fiber',
+            'co2'      => 'Carbon footprint',
+        ];
+
+        return view('goals.edit', [
+            'goal'      => $goal,
+            'goalTypes' => $goalTypes,
+        ]);
+    }
+
+    // 处理更新
+    public function update(Request $request, UserGoal $goal)
+    {
+        $this->authorizeGoal($goal);
+
+        $data = $request->validate([
+            'goal_type'    => 'required|string',
+            'target_value' => 'required|numeric',
+            'direction'    => 'required|in:up,down',
+            'unit'         => 'required|string|max:20',
+            'start_date'   => 'required|date',
+            'end_date'     => 'nullable|date|after_or_equal:start_date',
+            'is_active'    => 'nullable',
+        ]);
+
+        $data['is_active'] = $request->boolean('is_active');
+
+        $goal->update($data);
+
+        return redirect()
+            ->route('goals.index')
+            ->with('success', 'Goal updated successfully.');
+    }
+
+    // 删除目标
+    public function destroy(UserGoal $goal)
+    {
+        $this->authorizeGoal($goal);
+
         $goal->delete();
 
         return redirect()
             ->route('goals.index')
-            ->with('success', '目标删除成功！');
+            ->with('success', 'Goal deleted.');
+    }
+
+    // 确保用户只能操作自己的目标
+    protected function authorizeGoal(UserGoal $goal): void
+    {
+        if ($goal->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized');
+        }
     }
 }

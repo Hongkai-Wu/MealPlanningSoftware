@@ -2,100 +2,78 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CalendarEntry;
+use App\Models\MealLog;
 use App\Models\Recipe;
-use App\Services\GoalEvaluator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class MealLogController extends Controller
 {
+    // 列表：当前用户所有 Meal Logs（按时间倒序）
     public function index()
     {
         $user = Auth::user();
 
-        $entries = CalendarEntry::with(['recipe.nutrient'])
+        $mealLogs = MealLog::with('recipe')
             ->where('user_id', $user->id)
-            ->orderBy('date', 'desc')
-            ->get();
+            ->orderByDesc('consumed_at')
+            ->paginate(10);
 
-        $todayEntries = CalendarEntry::with(['recipe.nutrient'])
-            ->where('user_id', $user->id)
-            ->whereDate('date', today())
-            ->get();
-
-        $recipes = Recipe::where('user_id', $user->id)->orderBy('name')->get();
-
-        $todayNutrition = [
-            'calories' => 0, 'protein' => 0, 'carbs' => 0,
-            'fat' => 0, 'fiber' => 0, 'sugar' => 0, 'sodium' => 0,
-        ];
-
-        foreach ($todayEntries as $entry) {
-            $n = $entry->nutrition;
-            $todayNutrition['calories'] += $n['calories'];
-            $todayNutrition['protein']  += $n['protein'];
-            $todayNutrition['carbs']    += $n['carbs'];
-            $todayNutrition['fat']      += $n['fat'];
-            $todayNutrition['fiber']    += $n['fiber'];
-            $todayNutrition['sugar']    += $n['sugar'];
-            $todayNutrition['sodium']   += $n['sodium'];
-        }
-
-        foreach ($todayNutrition as $k => $v) {
-            $todayNutrition[$k] = round($v, 2);
-        }
-
-        $goalsResult = (new GoalEvaluator())->evaluate($todayNutrition, $user->id);
-
-        return view('meal_logs.index', compact('entries', 'recipes', 'todayNutrition', 'goalsResult'));
+        return view('meal_logs.index', [
+            'mealLogs' => $mealLogs,
+        ]);
     }
 
+    // 显示创建表单
     public function create()
-{
-    $userId = Auth::id();
+    {
+        $user = Auth::user();
 
-    // Get the system user's ID (who owns public recipes)
-    $systemId = \DB::table('users')->where('email', 'system@demo.local')->value('id');
+        $recipes = Recipe::where('user_id', $user->id)
+            ->orderBy('name')
+            ->get();
 
-    // Load both user's own recipes and system public recipes
-    $recipes = \App\Models\Recipe::query()
-        ->when($systemId, fn($q) => $q->where('user_id', $userId)->orWhere('user_id', $systemId))
-        ->when(!$systemId, fn($q) => $q->where('user_id', $userId))
-        ->orderBy('name')
-        ->get();
+        return view('meal_logs.create', [
+            'recipes' => $recipes,
+            'defaultConsumedAt' => now()->format('Y-m-d\TH:i'),
+        ]);
+    }
 
-    return view('meal_logs.create', compact('recipes'));
-}
-
+    // 保存新记录
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $user = Auth::user();
+
+        $data = $request->validate([
             'recipe_id' => ['required', 'exists:recipes,id'],
-            'date'      => ['required', 'date'],
-            'meal_type' => ['required', 'in:Breakfast,Lunch,Dinner,Snack'],
-            'servings'  => ['required', 'integer', 'min:1', 'max:10'],
+            'servings_consumed' => ['required', 'numeric', 'min:0.1'],
+            'consumed_at' => ['nullable', 'date'],
         ]);
 
-        CalendarEntry::create([
-            'user_id'   => Auth::id(),
-            'recipe_id' => $validated['recipe_id'],
-            'date'      => $validated['date'],
-            'meal_type' => $validated['meal_type'],
-            'servings'  => $validated['servings'],
-        ]);
+        $data['user_id'] = $user->id;
+        if (empty($data['consumed_at'])) {
+            $data['consumed_at'] = now();
+        }
 
-        return redirect()->route('meal_logs.index')->with('success', 'Meal log saved successfully.');
+        MealLog::create($data);
+
+        return redirect()
+            ->route('meal_logs.index')
+            ->with('success', 'Meal log added.');
     }
 
-    public function destroy(CalendarEntry $meal_log)
+    // 删除一条记录（可选）
+    public function destroy(MealLog $meal_log)
     {
         if ($meal_log->user_id !== Auth::id()) {
-            return redirect()->route('meal_logs.index')->with('error', 'Unauthorized action.');
+            abort(403);
         }
 
         $meal_log->delete();
 
-        return redirect()->route('meal_logs.index')->with('success', 'Meal log deleted successfully.');
+        return redirect()
+            ->route('meal_logs.index')
+            ->with('success', 'Meal log deleted.');
     }
 }

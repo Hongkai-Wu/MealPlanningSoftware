@@ -1,97 +1,86 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log a Meal | Food Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7f6; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+@include('partials.navbar', ['active' => 'meal_logs'])
 
-@section('content')
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-xl mx-auto bg-white p-8 rounded-xl shadow-lg">
-        <a href=" 'meal_logs.index') }}" class="text-indigo-600 hover:text-indigo-800 transition duration-150 ease-in-out flex items-center mb-6">
-            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-            Back to Log List
-        </a >
+<main class="max-w-3xl mx-auto">
+    <div class="bg-white rounded-xl shadow p-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">Log a meal</h1>
 
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-3">Log a Meal</h1>
-
-        @if ($errors->any())
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                <strong class="font-bold">Whoops!</strong>
-                <span class="block sm:inline">There were some problems with your input.</span>
-                <ul class="mt-2 list-disc list-inside">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        <form method="POST" action="{{ route('meal_logs.store') }}">
+        <form action="{{ route('meal_logs.store') }}" method="POST" class="space-y-4">
             @csrf
 
-            <div class="mb-5">
-                <label for="recipe_id" class="block text-sm font-medium text-gray-700 mb-2">Which recipe did you eat?</label>
-                <select id="recipe_id" name="recipe_id" required
-                        class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                    <option value="">-- Please select a recipe --</option>
-                    @foreach ($recipes as $recipe)
-                        <option value="{{ $recipe->id }}" {{ old('recipe_id') == $recipe->id ? 'selected' : '' }}>
-                            {{ $recipe->name }} ({{ $recipe->calories }} kcal)
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Recipe
+                </label>
+                <select name="recipe_id"
+                        class="w-full border rounded px-2 py-1 text-sm"
+                        required>
+                    <option value="">-- Select recipe --</option>
+                    @foreach($recipes as $recipe)
+                        <option value="{{ $recipe->id }}"
+                            {{ old('recipe_id') == $recipe->id ? 'selected' : '' }}>
+                            {{ $recipe->name }} ({{ $recipe->calories }} kcal / {{ $recipe->serving_size }})
                         </option>
                     @endforeach
                 </select>
             </div>
 
-            <div class="mb-5">
-                <label for="servings" class="block text-sm font-medium text-gray-700 mb-2">How many servings did you consume?</label>
-                <input type="number" id="servings" name="servings" min="1" step="1" required value="{{ old('servings', 1) }}"
-                       class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                <p class="mt-2 text-xs text-gray-500">Enter an integer number of servings (e.g., 1, 2).</p >
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Servings consumed
+                    </label>
+                    <input type="number" name="servings_consumed" step="0.1" min="0.1"
+                           value="{{ old('servings_consumed', 1) }}"
+                           class="w-full border rounded px-2 py-1 text-sm"
+                           required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Time (optional)
+                    </label>
+                    <input type="datetime-local" name="consumed_at"
+                           value="{{ old('consumed_at', $defaultConsumedAt) }}"
+                           class="w-full border rounded px-2 py-1 text-sm">
+                </div>
             </div>
 
-            <div class="mb-5">
-                <label for="date" class="block text-sm font-medium text-gray-700 mb-2">Date</label>
-                <input type="date" id="date" name="date" required value="{{ old('date', now()->toDateString()) }}"
-                       class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-            </div>
-
-            <div class="mb-6">
-                <label for="meal_type" class="block text-sm font-medium text-gray-700 mb-2">Meal Type</label>
-                <select id="meal_type" name="meal_type" required
-                        class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                    @php $mt = old('meal_type'); @endphp
-                    <option value="">-- Select meal type --</option>
-                    <option {{ $mt==='Breakfast' ? 'selected' : '' }}>Breakfast</option>
-                    <option {{ $mt==='Lunch' ? 'selected' : '' }}>Lunch</option>
-                    <option {{ $mt==='Dinner' ? 'selected' : '' }}>Dinner</option>
-                    <option {{ $mt==='Snack' ? 'selected' : '' }}>Snack</option>
-                </select>
-            </div>
-
-            <div>
+            <div class="flex items-center space-x-3 mt-4">
                 <button type="submit"
-                        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out">
-                    Confirm Log
+                        class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-green-700">
+                    Save
                 </button>
+                <a href="{{ route('meal_logs.index') }}"
+                   class="text-sm text-gray-600 hover:underline">
+                    Cancel
+                </a>
             </div>
+
+            @if($errors->any())
+                <div class="mt-3 text-sm text-red-600">
+                    <ul class="list-disc list-inside">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
         </form>
     </div>
-</div>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  
-  const dateInput = document.querySelector('input[name="date"]');
-  if (dateInput) dateInput.max = new Date().toISOString().split('T')[0];
-  
-  const form = document.querySelector('form');
-  if (form) {
-   form.addEventListener('submit', e => {
-  const btn = form.querySelector('button[type="submit"]');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerText = 'Submitting...';
-  }
+</main>
 
-  
-  e.preventDefault();
-  setTimeout(() => form.submit(), 2000);
-});  }
-});
-</script>
-@endsection
+</body>
+</html>
