@@ -53,7 +53,7 @@
                         Time (optional)
                     </label>
                     <input type="datetime-local" name="consumed_at"
-                           value="{{ old('consumed_at', $defaultConsumedAt) }}"
+                           value="{{ old('consumed_at', now()->format('Y-m-d\TH:i')) }}"
                            class="w-full border rounded px-2 py-1 text-sm">
                 </div>
             </div>

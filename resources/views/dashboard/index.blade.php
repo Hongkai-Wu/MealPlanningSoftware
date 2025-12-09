@@ -23,30 +23,36 @@
     <h1 class="text-3xl font-bold text-gray-800 mb-2">{{ $title ?? 'Dashboard' }}</h1>
     <p class="text-gray-600 mb-6">{{ $statusMessage ?? '' }}</p>
 
-    {{-- 今日营养汇总（实际摄入） --}}
-    <section class="mb-6 grid grid-cols-1 md:grid-cols-5 gap-4">
+   
+    <section class="mb-6 grid grid-cols-1 md:grid-cols-6 gap-4">
         <div class="bg-white p-4 rounded-xl shadow">
             <div class="text-xs text-gray-500 uppercase">Calories (logged)</div>
             <div class="text-2xl font-bold text-gray-800">
-                {{ round($totals['calories']) }} <span class="text-sm font-normal">kcal</span>
+                {{ round($totals['calories'] ?? 0) }} <span class="text-sm font-normal">kcal</span>
             </div>
         </div>
         <div class="bg-white p-4 rounded-xl shadow">
             <div class="text-xs text-gray-500 uppercase">Protein (logged)</div>
             <div class="text-2xl font-bold text-gray-800">
-                {{ round($totals['protein'], 1) }} <span class="text-sm font-normal">g</span>
+                {{ round($totals['protein'] ?? 0, 1) }} <span class="text-sm font-normal">g</span>
             </div>
         </div>
         <div class="bg-white p-4 rounded-xl shadow">
             <div class="text-xs text-gray-500 uppercase">Carbs (logged)</div>
             <div class="text-2xl font-bold text-gray-800">
-                {{ round($totals['carbs'], 1) }} <span class="text-sm font-normal">g</span>
+                {{ round($totals['carbs'] ?? 0, 1) }} <span class="text-sm font-normal">g</span>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow">
+            <div class="text-xs text-gray-500 uppercase">Fiber (logged)</div>
+            <div class="text-2xl font-bold text-gray-800">
+                {{ round($totals['fiber'] ?? 0, 1) }} <span class="text-sm font-normal">g</span>
             </div>
         </div>
         <div class="bg-white p-4 rounded-xl shadow">
             <div class="text-xs text-gray-500 uppercase">Fat (logged)</div>
             <div class="text-2xl font-bold text-gray-800">
-                {{ round($totals['fat'], 1) }} <span class="text-sm font-normal">g</span>
+                {{ round($totals['fat'] ?? 0, 1) }} <span class="text-sm font-normal">g</span>
             </div>
         </div>
         <div class="bg-white p-4 rounded-xl shadow">
@@ -57,7 +63,6 @@
         </div>
     </section>
 
-    {{-- Goal Status Overview：目标 + 今日进度 --}}
     <section class="mb-8 p-6 bg-white rounded-xl shadow-lg">
         <div class="flex items-center justify-between mb-4 border-b pb-2">
             <h2 class="text-xl font-semibold text-gray-700">Goal Status Overview</h2>
@@ -133,7 +138,6 @@
         </div>
     </section>
 
-    {{-- System Statistics --}}
     <section class="p-6 bg-white rounded-xl shadow-lg">
         <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">System Statistics</h2>
 
@@ -160,22 +164,21 @@
         </div>
     </section>
 
-    {{-- Planned vs Logged Intake（更直观的进度条） --}}
     <section class="mt-8 p-6 bg-white rounded-xl shadow-lg">
         <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">
             Planned vs Logged Intake (Today)
         </h2>
 
         @php
-            
-    $nutrientsConfig = [
-        'calories' => ['label' => 'Calories',         'unit' => 'kcal'],
-        'protein'  => ['label' => 'Protein',          'unit' => 'g'],
-        'carbs'    => ['label' => 'Carbs',            'unit' => 'g'],
-        'fat'      => ['label' => 'Fat',              'unit' => 'g'],
-        'co2'      => ['label' => 'Carbon footprint', 'unit' => 'kg CO₂e'],
-    ];
-@endphp
+            $nutrientsConfig = [
+                'calories' => ['label' => 'Calories',         'unit' => 'kcal'],
+                'protein'  => ['label' => 'Protein',          'unit' => 'g'],
+                'carbs'    => ['label' => 'Carbs',            'unit' => 'g'],
+                'fat'      => ['label' => 'Fat',              'unit' => 'g'],
+                'fiber'    => ['label' => 'Fiber',            'unit' => 'g'],
+                'co2'      => ['label' => 'Carbon footprint', 'unit' => 'kg CO₂e'],
+            ];
+        @endphp
 
         <table class="min-w-full text-sm">
             <thead>
@@ -242,7 +245,6 @@
         </table>
     </section>
 
-    {{-- Today’s Meal Plan --}}
     <section class="mt-8 p-6 bg-white rounded-xl shadow-lg">
         <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Today’s Meal Plan</h2>
 
@@ -270,7 +272,6 @@
         @endif
     </section>
 
-    {{-- Today’s Actual Meals --}}
     <section class="mt-8 p-6 bg-white rounded-xl shadow-lg">
         <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Today’s Actual Meals</h2>
 
@@ -310,7 +311,6 @@
         @endif
     </section>
 
-    {{-- Recommended recipes to reach goals --}}
     <section class="mt-8 p-6 bg-white rounded-xl shadow-lg">
         <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">
             Suggested Recipes to Help You Reach Today’s Goals
@@ -322,58 +322,173 @@
             </p>
         @else
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                @foreach($recommendedRecipes as $recipe)
-                    <div class="border rounded-lg p-3 bg-gray-50">
-                        <div class="font-semibold text-gray-800 mb-1">
-                            {{ $recipe->name }}
-                        </div>
-                        <p class="text-xs text-gray-500 mb-1">
-                            Serving: {{ $recipe->serving_size }}
-                        </p>
-                        <p class="text-xs text-gray-600">
-                            {{ $recipe->calories }} kcal ·
-                            {{ $recipe->protein }} g protein ·
-                            {{ $recipe->carbs }} g carbs ·
-                            {{ $recipe->fat }} g fat
-                        </p>
-                    </div>
-                @endforeach
+
+              @foreach($recommendedRecipes as $recipe)
+    <div class="border rounded-lg p-3 bg-gray-50">
+        <div class="font-semibold text-gray-800 mb-1">
+            {{ $recipe->name }}
+        </div>
+        <p class="text-xs text-gray-500 mb-1">
+            Serving: {{ $recipe->serving_size }}
+        </p>
+        <p class="text-xs text-gray-600">
+            {{ $recipe->calories }} kcal ·
+            {{ $recipe->protein }} g protein ·
+            {{ $recipe->carbs }} g carbs ·
+            {{ $recipe->fiber }} g fiber ·
+            {{ $recipe->fat }} g fat
+            @if($recipe->carbonFootprint)
+                · {{ $recipe->carbonFootprint->co2_emissions }} kg CO₂e
+            @endif
+        </p>
+
+        @php
+            $goalHelpTexts = [];
+
+            $goalToFieldMap = [
+                'calories' => 'calories',
+                'protein'  => 'protein',
+                'carbs'    => 'carbs',
+                'fat'      => 'fat',
+                'fiber'    => 'fiber',
+                'co2'      => 'co2',
+            ];
+
+            foreach ($activeGoals as $goal) {
+                $statusData = $goalStatuses[$goal->id] ?? null;
+                if (!$statusData || $statusData['status'] === 'on_track') {
+                    continue;
+                }
+
+                $type = $goal->goal_type;
+                if (!isset($goalToFieldMap[$type])) {
+                    continue;
+                }
+
+                if ($type === 'co2') {
+                    if (!$recipe->carbonFootprint) {
+                        continue;
+                    }
+                } else {
+                    $field = $goalToFieldMap[$type];
+                    if (!isset($recipe->$field)) {
+                        continue;
+                    }
+                }
+
+                $directionText = $goal->direction === 'up'
+                    ? 'increase'
+                    : 'keep lower';
+
+                $label = ucfirst($type === 'co2' ? 'carbon footprint' : $type);
+
+                $goalHelpTexts[] = $label . ' (' . $directionText . ')';
+            }
+        @endphp
+
+        @if(!empty($goalHelpTexts))
+            <p class="text-xs text-gray-500 mt-1">
+                Helps with your
+                {{ implode(', ', $goalHelpTexts) }}
+                goal(s) today.
+            </p>
+        @endif
+    </div>
+@endforeach
+
+
             </div>
         @endif
     </section>
 
-    {{-- Latest biometrics --}}
-    @if($latestBiometric)
-        <section class="mt-8 p-6 bg-white rounded-xl shadow-lg">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Latest Health Metrics</h2>
-            <p class="text-sm text-gray-700">
-                Date: {{ $latestBiometric->measurement_date->format('Y-m-d') }}
-            </p>
-            @if($latestBiometric->weight)
-                <p class="text-sm text-gray-700">
-                    Weight: {{ $latestBiometric->weight }} kg
-                </p>
-            @endif
-            @if($latestBiometric->systolic_bp && $latestBiometric->diastolic_bp)
-                <p class="text-sm text-gray-700">
-                    Blood Pressure: {{ $latestBiometric->systolic_bp }}/{{ $latestBiometric->diastolic_bp }} mmHg
-                </p>
-            @endif
-            @if($latestBiometric->bmi)
-                <p class="text-sm text-gray-700">
-                    BMI: {{ $latestBiometric->bmi }}
-                </p>
-            @endif
-        </section>
-    @endif
+    {{-- Latest biometrics with changes vs previous --}}
+@if($latestBiometric)
+    @php
+        $prev = $previousBiometric ?? null;
 
-    {{-- Add Recipe Button --}}
-    <div class="mt-8 text-center">
-        <a href="{{ route('recipes.create') }}"
-           class="inline-block px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-150">
-            Add New Recipe
-        </a>
-    </div>
+        
+        $weightDiff = ($prev && $latestBiometric->weight !== null && $prev->weight !== null)
+            ? round($latestBiometric->weight - $prev->weight, 1)
+            : null;
+
+        
+        $bmiDiff = ($prev && $latestBiometric->bmi !== null && $prev->bmi !== null)
+            ? round($latestBiometric->bmi - $prev->bmi, 1)
+            : null;
+
+        
+        $sysDiff = ($prev && $latestBiometric->systolic_bp && $prev->systolic_bp)
+            ? $latestBiometric->systolic_bp - $prev->systolic_bp
+            : null;
+
+        $diaDiff = ($prev && $latestBiometric->diastolic_bp && $prev->diastolic_bp)
+            ? $latestBiometric->diastolic_bp - $prev->diastolic_bp
+            : null;
+
+        
+        function formatDiff($diff, $unit = '')
+        {
+            if ($diff === null) {
+                return '';
+            }
+            if (abs($diff) < 0.01) {
+                return ' (no change)';
+            }
+            $arrow = $diff > 0 ? '↑' : '↓';
+            $value = abs($diff);
+            return " ({$arrow} {$value}{$unit} since last)";
+        }
+    @endphp
+
+    <section class="mt-8 p-6 bg-white rounded-xl shadow-lg">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">Latest Health Metrics</h2>
+
+        <p class="text-sm text-gray-700">
+            Date: {{ $latestBiometric->measurement_date?->format('Y-m-d') ?? 'N/A' }}
+        </p>
+
+        @if($latestBiometric->weight !== null)
+            <p class="text-sm text-gray-700">
+                Weight: {{ $latestBiometric->weight }} kg
+                <span class="text-xs text-gray-500">
+                    {{ formatDiff($weightDiff, ' kg') }}
+                </span>
+            </p>
+        @endif
+
+        @if($latestBiometric->bmi !== null)
+            <p class="text-sm text-gray-700">
+                BMI: {{ $latestBiometric->bmi }}
+                <span class="text-xs text-gray-500">
+                    {{ formatDiff($bmiDiff, '') }}
+                </span>
+            </p>
+        @endif
+
+        @if($latestBiometric->systolic_bp && $latestBiometric->diastolic_bp)
+            <p class="text-sm text-gray-700">
+                Blood Pressure: {{ $latestBiometric->systolic_bp }}/{{ $latestBiometric->diastolic_bp }} mmHg
+                @if($sysDiff !== null || $diaDiff !== null)
+                    <span class="text-xs text-gray-500">
+                        (
+                        @if($sysDiff !== null)
+                            {{ $sysDiff > 0 ? '↑' : ($sysDiff < 0 ? '↓' : '±') }}
+                            {{ abs($sysDiff) }} systolic
+                        @endif
+                        @if($diaDiff !== null)
+                            ; {{ $diaDiff > 0 ? '↑' : ($diaDiff < 0 ? '↓' : '±') }}
+                            {{ abs($diaDiff) }} diastolic
+                        @endif
+                        since last
+                        )
+                    </span>
+                @endif
+            </p>
+        @endif
+    </section>
+@endif
+
+
 </main>
 
 </body>

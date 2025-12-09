@@ -34,32 +34,68 @@
                        class="w-full border rounded px-3 py-2 text-sm" required>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Calories (kcal)</label>
-                    <input type="number" step="0.1" min="0" name="calories"
-                           value="{{ old('calories', $recipe->calories) }}"
-                           class="w-full border rounded px-3 py-2 text-sm" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Protein (g)</label>
-                    <input type="number" step="0.1" min="0" name="protein"
-                           value="{{ old('protein', $recipe->protein) }}"
-                           class="w-full border rounded px-3 py-2 text-sm" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Carbs (g)</label>
-                    <input type="number" step="0.1" min="0" name="carbs"
-                           value="{{ old('carbs', $recipe->carbs) }}"
-                           class="w-full border rounded px-3 py-2 text-sm" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Fat (g)</label>
-                    <input type="number" step="0.1" min="0" name="fat"
-                           value="{{ old('fat', $recipe->fat) }}"
-                           class="w-full border rounded px-3 py-2 text-sm" required>
-                </div>
-            </div>
+           <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Calories (kcal)</label>
+        <input
+            type="number"
+            name="calories"
+            step="0.01"
+            min="0"
+            class="mt-1 block w-full border-gray-300 rounded-md"
+            value="{{ old('calories', $recipe->calories) }}"
+        >
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Protein (g)</label>
+        <input
+            type="number"
+            name="protein"
+            step="0.01"
+            min="0"
+            class="mt-1 block w-full border-gray-300 rounded-md"
+            value="{{ old('protein', $recipe->protein) }}"
+        >
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Carbs (g)</label>
+        <input
+            type="number"
+            name="carbs"
+            step="0.01"
+            min="0"
+            class="mt-1 block w-full border-gray-300 rounded-md"
+            value="{{ old('carbs', $recipe->carbs) }}"
+        >
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Fat (g)</label>
+        <input
+            type="number"
+            name="fat"
+            step="0.01"
+            min="0"
+            class="mt-1 block w-full border-gray-300 rounded-md"
+            value="{{ old('fat', $recipe->fat) }}"
+        >
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Fiber (g)</label>
+        <input
+            type="number"
+            name="fiber"
+            step="0.01"
+            min="0"
+            class="mt-1 block w-full border-gray-300 rounded-md"
+            value="{{ old('fiber', $recipe->fiber) }}"
+        >
+    </div>
+</div>
+
 
             {{-- 碳足迹部分 --}}
             @php

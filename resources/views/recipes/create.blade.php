@@ -34,30 +34,44 @@
                        class="w-full border rounded px-3 py-2 text-sm" required>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Calories (kcal)</label>
-                    <input type="number" step="0.1" min="0" name="calories" value="{{ old('calories') }}"
-                           class="w-full border rounded px-3 py-2 text-sm" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Protein (g)</label>
-                    <input type="number" step="0.1" min="0" name="protein" value="{{ old('protein') }}"
-                           class="w-full border rounded px-3 py-2 text-sm" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Carbs (g)</label>
-                    <input type="number" step="0.1" min="0" name="carbs" value="{{ old('carbs') }}"
-                           class="w-full border rounded px-3 py-2 text-sm" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Fat (g)</label>
-                    <input type="number" step="0.1" min="0" name="fat" value="{{ old('fat') }}"
-                           class="w-full border rounded px-3 py-2 text-sm" required>
-                </div>
-            </div>
+           <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Calories (kcal)</label>
+        <input type="number" name="calories" step="0.01" min="0"
+               class="mt-1 block w-full border-gray-300 rounded-md"
+               value="{{ old('calories') }}">
+    </div>
 
-            {{-- 碳足迹部分 --}}
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Protein (g)</label>
+        <input type="number" name="protein" step="0.01" min="0"
+               class="mt-1 block w-full border-gray-300 rounded-md"
+               value="{{ old('protein') }}">
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Carbs (g)</label>
+        <input type="number" name="carbs" step="0.01" min="0"
+               class="mt-1 block w-full border-gray-300 rounded-md"
+               value="{{ old('carbs') }}">
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Fat (g)</label>
+        <input type="number" name="fat" step="0.01" min="0"
+               class="mt-1 block w-full border-gray-300 rounded-md"
+               value="{{ old('fat') }}">
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Fiber (g)</label>
+        <input type="number" name="fiber" step="0.01" min="0"
+               class="mt-1 block w-full border-gray-300 rounded-md"
+               value="{{ old('fiber') }}">
+    </div>
+</div>
+
+            
             <div class="mt-4 border-t pt-4">
                 <h2 class="text-sm font-semibold text-gray-700 mb-2">Carbon footprint (optional)</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

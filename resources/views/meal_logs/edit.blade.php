@@ -46,7 +46,7 @@
             </div>
 
             <!-- Real-time Calorie Display -->
-            <div id="calorie_display" class="bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-md mb-6 text-sm text-indigo-700 dark:text-indigo-300">
+            <div id="calorie_display" class="bg-green-50 dark:bg-indigo-900/30 p-3 rounded-md mb-6 text-sm text-green-700 dark:text-indigo-300">
                 Calories per serving for selected recipe: <span id="calories_per_serving" class="font-semibold">
                     <!-- Initial value, displays calories if mealLog has a linked recipe -->
                     @if($mealLog->recipe)
@@ -100,7 +100,7 @@
             <div class="flex justify-between items-center">
                 <button 
                     type="submit" 
-                    class="flex-1 mr-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md transition duration-150 ease-in-out"
+                    class="flex-1 mr-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition duration-150 ease-in-out"
                 >
                     Update Log
                 </button>

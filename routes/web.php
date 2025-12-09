@@ -35,8 +35,6 @@ Route::middleware(['auth'])->group(function () {
         ->name('meal_plan.index');
 
    
-
-    // 日历（Meal Plan 将来用）
     Route::post('/meal-records', [CalendarEntryController::class, 'store'])
         ->name('calendar_entries.store');
     Route::delete('/meal-records/{calendarEntry}', [CalendarEntryController::class, 'destroy'])

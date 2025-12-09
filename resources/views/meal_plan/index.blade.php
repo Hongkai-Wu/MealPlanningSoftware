@@ -24,52 +24,118 @@
             </div>
         @endif
 
-        {{-- 这里假设控制器传入了 $entries 和 $recipes （可按你现有的变量名调整） --}}
+        @php
+            $entries = $entries ?? collect();
+
+            $totals = [
+                'calories' => 0,
+                'protein'  => 0,
+                'carbs'    => 0,
+                'fiber'    => 0,
+                'fat'      => 0,
+                'co2'      => 0,
+            ];
+        @endphp
+
         <div class="mb-6">
             <h2 class="text-lg font-semibold text-gray-700 mb-2">Scheduled meals</h2>
 
             @if($entries->isEmpty())
-                <p class="text-sm text-gray-500">No meals scheduled for today.</p>
+                <p class="text-sm text-gray-500">No meals scheduled for today.</p >
             @else
-                <table class="min-w-full text-sm">
-                    <thead>
-                    <tr class="border-b">
-                        <th class="text-left py-2">Meal</th>
-                        <th class="text-left py-2">Recipe</th>
-                        <th class="text-left py-2">Servings</th>
-                        <th class="text-left py-2">Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    @foreach($entries as $entry)
-                        <tr class="border-b">
-                            <td class="py-2 capitalize">{{ $entry->meal_type }}</td>
-                            <td class="py-2">{{ $entry->recipe?->name ?? 'N/A' }}</td>
-                            <td class="py-2">{{ $entry->servings }}</td>
-                            <td class="py-2">
-                                <form action="{{ route('calendar_entries.destroy', $entry) }}"
-                                      method="POST"
-                                      class="inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                            class="text-xs text-red-600 hover:underline"
-                                            onclick="return confirm('Remove this meal from plan?')">
-                                        Remove
-                                    </button>
-                                </form>
-                            </td>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead>
+                        <tr class="border-b bg-gray-50">
+                            <th class="text-left py-2 px-2">Meal</th>
+                            <th class="text-left py-2 px-2">Recipe</th>
+                            <th class="text-left py-2 px-2">Servings</th>
+                            <th class="text-left py-2 px-2">Calories</th>
+                            <th class="text-left py-2 px-2">Protein</th>
+                            <th class="text-left py-2 px-2">Carbs</th>
+                            <th class="text-left py-2 px-2">Fiber</th>
+                            <th class="text-left py-2 px-2">Fat</th>
+                            <th class="text-left py-2 px-2">CO₂</th>
+                            <th class="text-left py-2 px-2">Actions</th>
                         </tr>
-                    @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                        @foreach($entries as $entry)
+                            @php
+                                $recipe   = $entry->recipe;
+                                $servings = $entry->servings ?? 1;
+
+                                $calories = $recipe ? $servings * ($recipe->calories ?? 0) : 0;
+                                $protein  = $recipe ? $servings * ($recipe->protein  ?? 0) : 0;
+                                $carbs    = $recipe ? $servings * ($recipe->carbs    ?? 0) : 0;
+                                $fiber    = $recipe ? $servings * ($recipe->fiber    ?? 0) : 0;
+                                $fat      = $recipe ? $servings * ($recipe->fat      ?? 0) : 0;
+
+                                $co2 = 0;
+                                if ($recipe && $recipe->carbonFootprint) {
+                                    $co2PerServing = $recipe->carbonFootprint->co2_emissions ?? 0;
+                                    $co2 = $servings * $co2PerServing;
+                                }
+
+                                $totals['calories'] += $calories;
+                                $totals['protein']  += $protein;
+                                $totals['carbs']    += $carbs;
+                                $totals['fiber']    += $fiber;
+                                $totals['fat']      += $fat;
+                                $totals['co2']      += $co2;
+                            @endphp
+
+                            <tr class="border-b">
+                                <td class="py-2 px-2 capitalize">{{ $entry->meal_type }}</td>
+                                <td class="py-2 px-2">{{ $recipe->name ?? 'N/A' }}</td>
+                                <td class="py-2 px-2">{{ $servings }}</td>
+                                <td class="py-2 px-2">{{ round($calories) }} kcal</td>
+                                <td class="py-2 px-2">{{ round($protein, 1) }} g</td>
+                                <td class="py-2 px-2">{{ round($carbs, 1) }} g</td>
+                                <td class="py-2 px-2">{{ round($fiber, 1) }} g</td>
+                                <td class="py-2 px-2">{{ round($fat, 1) }} g</td>
+                                <td class="py-2 px-2">{{ round($co2, 2) }} kg CO₂e</td>
+                                <td class="py-2 px-2">
+                                    <form action="{{ route('calendar_entries.destroy', $entry) }}"
+                                          method="POST"
+                                          class="inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="text-xs text-red-600 hover:underline"
+                                                onclick="return confirm('Remove this meal from plan?')">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                        <tfoot>
+                        <tr class="bg-gray-50 font-semibold border-t">
+                            <td class="py-2 px-2" colspan="3">Today planned totals</td>
+                            <td class="py-2 px-2">{{ round($totals['calories']) }} kcal</td>
+                            <td class="py-2 px-2">{{ round($totals['protein'], 1) }} g</td>
+                            <td class="py-2 px-2">{{ round($totals['carbs'], 1) }} g</td>
+                            <td class="py-2 px-2">{{ round($totals['fiber'], 1) }} g</td>
+                            <td class="py-2 px-2">{{ round($totals['fat'], 1) }} g</td>
+                            <td class="py-2 px-2">{{ round($totals['co2'], 2) }} kg CO₂e</td>
+                            <td></td>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
             @endif
         </div>
 
         <div class="border-t pt-4 mt-4">
             <h2 class="text-lg font-semibold text-gray-700 mb-2">Add meal to today</h2>
-            <form action="{{ route('calendar_entries.store') }}" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <form action="{{ route('calendar_entries.store') }}" method="POST"
+                  class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 @csrf
+
+                {{-- 传今天的日期，避免 “The date field is required” --}}
+                <input type="hidden" name="date" value="{{ now()->toDateString() }}">
 
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Meal type</label>

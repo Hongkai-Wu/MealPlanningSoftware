@@ -10,48 +10,82 @@ use Carbon\Carbon;
 
 class MealLogController extends Controller
 {
-    // 列表：当前用户所有 Meal Logs（按时间倒序）
+    
     public function index()
     {
-        $user = Auth::user();
+        $user  = Auth::user();
+        $today = Carbon::today();
 
-        $mealLogs = MealLog::with('recipe')
+       
+        $mealLogs = MealLog::with(['recipe.carbonFootprint'])
             ->where('user_id', $user->id)
             ->orderByDesc('consumed_at')
-            ->paginate(10);
+            ->get();
+
+       
+        $todayTotals = [
+            'calories' => 0,
+            'protein'  => 0,
+            'carbs'    => 0,
+            'fiber'    => 0,
+            'fat'      => 0,
+            'co2'      => 0,
+        ];
+
+        foreach ($mealLogs as $log) {
+            
+            if (!$log->consumed_at || !$log->consumed_at->isSameDay($today)) {
+                continue;
+            }
+
+            $recipe = $log->recipe;
+            if (!$recipe) {
+                continue;
+            }
+
+            $servings = $log->servings_consumed ?? 1;
+
+            $todayTotals['calories'] += $servings * ($recipe->calories ?? 0);
+            $todayTotals['protein']  += $servings * ($recipe->protein  ?? 0);
+            $todayTotals['carbs']    += $servings * ($recipe->carbs    ?? 0);
+            $todayTotals['fiber']    += $servings * ($recipe->fiber    ?? 0);
+            $todayTotals['fat']      += $servings * ($recipe->fat      ?? 0);
+
+            if ($recipe->carbonFootprint) {
+                $todayTotals['co2'] += $servings * ($recipe->carbonFootprint->co2_emissions ?? 0);
+            }
+        }
 
         return view('meal_logs.index', [
-            'mealLogs' => $mealLogs,
+            'mealLogs'    => $mealLogs,
+            'today'       => $today,
+            'todayTotals' => $todayTotals,
         ]);
     }
 
-    // 显示创建表单
+   
     public function create()
     {
-        $user = Auth::user();
-
-        $recipes = Recipe::where('user_id', $user->id)
+        $recipes = Recipe::where('user_id', Auth::id())
             ->orderBy('name')
             ->get();
 
         return view('meal_logs.create', [
             'recipes' => $recipes,
-            'defaultConsumedAt' => now()->format('Y-m-d\TH:i'),
         ]);
     }
 
-    // 保存新记录
+    
     public function store(Request $request)
     {
-        $user = Auth::user();
-
         $data = $request->validate([
-            'recipe_id' => ['required', 'exists:recipes,id'],
+            'recipe_id'         => ['required', 'exists:recipes,id'],
             'servings_consumed' => ['required', 'numeric', 'min:0.1'],
-            'consumed_at' => ['nullable', 'date'],
+            'consumed_at'       => ['nullable', 'date'],
         ]);
 
-        $data['user_id'] = $user->id;
+        $data['user_id'] = Auth::id();
+
         if (empty($data['consumed_at'])) {
             $data['consumed_at'] = now();
         }
@@ -63,17 +97,60 @@ class MealLogController extends Controller
             ->with('success', 'Meal log added.');
     }
 
-    // 删除一条记录（可选）
+    
+    public function edit(MealLog $meal_log)
+    {
+        $this->authorizeOwner($meal_log);
+
+        $recipes = Recipe::where('user_id', Auth::id())
+            ->orderBy('name')
+            ->get();
+
+        return view('meal_logs.edit', [
+            'mealLog' => $meal_log,
+            'recipes' => $recipes,
+        ]);
+    }
+
+    
+    public function update(Request $request, MealLog $meal_log)
+    {
+        $this->authorizeOwner($meal_log);
+
+        $data = $request->validate([
+            'recipe_id'         => ['required', 'exists:recipes,id'],
+            'servings_consumed' => ['required', 'numeric', 'min:0.1'],
+            'consumed_at'       => ['nullable', 'date'],
+        ]);
+
+        if (empty($data['consumed_at'])) {
+            $data['consumed_at'] = now();
+        }
+
+        $meal_log->update($data);
+
+        return redirect()
+            ->route('meal_logs.index')
+            ->with('success', 'Meal log updated.');
+    }
+
+    
     public function destroy(MealLog $meal_log)
     {
-        if ($meal_log->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorizeOwner($meal_log);
 
         $meal_log->delete();
 
         return redirect()
             ->route('meal_logs.index')
             ->with('success', 'Meal log deleted.');
+    }
+
+    
+    protected function authorizeOwner(MealLog $log): void
+    {
+        if ($log->user_id !== Auth::id()) {
+            abort(403);
+        }
     }
 }

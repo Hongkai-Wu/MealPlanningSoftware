@@ -7,33 +7,32 @@ use App\Models\MealLog;
 use App\Models\CalendarEntry;
 use App\Models\UserGoal;
 use App\Models\Biometric;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    /**
-     * Display the application dashboard.
-     */
+    
     public function index()
     {
         $user  = Auth::user();
         $today = Carbon::today();
 
-        // 1. 今日实际摄入（来自 Meal Logs）
+       
         $todayMealLogs = MealLog::with('recipe.carbonFootprint')
             ->where('user_id', $user->id)
             ->whereDate('consumed_at', $today)
             ->orderBy('consumed_at')
             ->get();
 
+        
         $totals = [
             'calories' => 0,
             'protein'  => 0,
             'carbs'    => 0,
             'fat'      => 0,
-            'co2'      => 0, // 实际碳足迹
+            'fiber'    => 0,  
+            'co2'      => 0,
         ];
 
         foreach ($todayMealLogs as $log) {
@@ -48,27 +47,28 @@ class DashboardController extends Controller
             $totals['protein']  += $servings * ($recipe->protein  ?? 0);
             $totals['carbs']    += $servings * ($recipe->carbs    ?? 0);
             $totals['fat']      += $servings * ($recipe->fat      ?? 0);
+            $totals['fiber']    += $servings * ($recipe->fiber    ?? 0);  
 
-            // 碳足迹 = 每份 CO2 × 份数（单位：kg CO2e）
+           
             if ($recipe->carbonFootprint) {
                 $co2PerServing = $recipe->carbonFootprint->co2_emissions ?? 0;
                 $totals['co2'] += $servings * $co2PerServing;
             }
         }
 
-        // 2. 今日计划摄入（来自 Calendar Entries）
+        
         $todayCalendarEntries = CalendarEntry::with('recipe.carbonFootprint')
             ->where('user_id', $user->id)
             ->whereDate('date', $today)
             ->orderBy('meal_type')
             ->get();
 
-        // 注意：这里一次性初始化，不要在 foreach 里面重复赋值
         $plannedTotals = [
             'calories' => 0,
             'protein'  => 0,
             'carbs'    => 0,
             'fat'      => 0,
+            'fiber'    => 0, 
             'co2'      => 0,
         ];
 
@@ -84,6 +84,7 @@ class DashboardController extends Controller
             $plannedTotals['protein']  += $servings * ($recipe->protein  ?? 0);
             $plannedTotals['carbs']    += $servings * ($recipe->carbs    ?? 0);
             $plannedTotals['fat']      += $servings * ($recipe->fat      ?? 0);
+            $plannedTotals['fiber']    += $servings * ($recipe->fiber    ?? 0); 
 
             if ($recipe->carbonFootprint) {
                 $co2PerServing = $recipe->carbonFootprint->co2_emissions ?? 0;
@@ -91,7 +92,7 @@ class DashboardController extends Controller
             }
         }
 
-        // 3. 当前激活的目标
+        
         $activeGoals = UserGoal::where('user_id', $user->id)
             ->where('is_active', true)
             ->where(function ($q) use ($today) {
@@ -100,20 +101,23 @@ class DashboardController extends Controller
             })
             ->get();
 
-        // goal_type 和 Recipe 表字段的映射
+      
         $goalColumnMap = [
             'calories' => 'calories',
             'protein'  => 'protein',
             'carbs'    => 'carbs',
             'fat'      => 'fat',
+            'fiber'    => 'fiber',   
         ];
 
-        // 4. 根据今日 totals 计算每个目标的达成状态
+     
         $goalStatuses = [];
+
         foreach ($activeGoals as $goal) {
-            $type = $goal->goal_type; // 例如 "protein"
+            $type = $goal->goal_type; // 例如 "protein" / "fiber"
+
             if (!array_key_exists($type, $goalColumnMap)) {
-                // 暂时不支持的类型（比如 fiber、co2）先跳过
+     
                 continue;
             }
 
@@ -121,12 +125,12 @@ class DashboardController extends Controller
             $status  = 'on_track';
 
             if ($goal->direction === 'up') {
-                // 想提高 —— 低于目标则 below
+              
                 if ($current + 1e-6 < $goal->target_value) {
                     $status = 'below';
                 }
             } else {
-                // 想降低 —— 超过目标则 over
+            
                 if ($current - 1e-6 > $goal->target_value) {
                     $status = 'over';
                 }
@@ -138,7 +142,7 @@ class DashboardController extends Controller
             ];
         }
 
-        // 5. 推荐食谱逻辑（基于未达成目标）
+       
         $recommendedRecipeIds = [];
 
         foreach ($activeGoals as $goal) {
@@ -156,23 +160,25 @@ class DashboardController extends Controller
             $status = $statusData['status'];
             $column = $goalColumnMap[$type];
 
-            // 情况 1：想“提高”的目标，但今天摄入“below” —— 推荐高这个营养的菜
+            
             if ($goal->direction === 'up' && $status === 'below') {
                 $ids = Recipe::where('user_id', $user->id)
-                    ->orderByDesc($column)       // 营养多的排前面
+                    ->orderByDesc($column)       
                     ->limit(3)
                     ->pluck('id')
                     ->all();
+
                 $recommendedRecipeIds = array_merge($recommendedRecipeIds, $ids);
             }
 
-            // 情况 2：想“降低”的目标，但今天摄入“over” —— 推荐低这个营养的菜
+          
             if ($goal->direction === 'down' && $status === 'over') {
                 $ids = Recipe::where('user_id', $user->id)
-                    ->orderBy($column)           // 营养少的排前面
+                    ->orderBy($column)           
                     ->limit(3)
                     ->pluck('id')
                     ->all();
+
                 $recommendedRecipeIds = array_merge($recommendedRecipeIds, $ids);
             }
         }
@@ -183,15 +189,33 @@ class DashboardController extends Controller
             ->take(6)
             ->get();
 
-        // 6. 一些统计数字
-        $totalRecipes         = Recipe::where('user_id', $user->id)->count();
-        $scheduledMealsToday  = $todayCalendarEntries->count();
-        $biometricEntries     = Biometric::where('user_id', $user->id)->count();
+        
+        $totalRecipes        = Recipe::where('user_id', $user->id)->count();
+        $scheduledMealsToday = $todayCalendarEntries->count();
+        $biometricEntries    = Biometric::where('user_id', $user->id)->count();
 
         $latestBiometric = Biometric::where('user_id', $user->id)
             ->orderByDesc('measurement_date')
             ->orderByDesc('created_at')
             ->first();
+
+     $previousBiometric = null;
+
+if ($latestBiometric) {
+    $previousBiometric = Biometric::where('user_id', $user->id)
+        ->where(function ($q) use ($latestBiometric) {
+            
+            $q->where('measurement_date', '<', $latestBiometric->measurement_date)
+              ->orWhere(function ($q2) use ($latestBiometric) {
+                  $q2->where('measurement_date', $latestBiometric->measurement_date)
+                     ->where('id', '<', $latestBiometric->id);
+              });
+        })
+        ->orderByDesc('measurement_date')
+        ->orderByDesc('created_at')
+        ->first();
+}
+
 
         $statusMessage = null;
         if ($activeGoals->isEmpty()) {
@@ -211,7 +235,8 @@ class DashboardController extends Controller
             'goalStatuses'         => $goalStatuses,
             'biometricEntries'     => $biometricEntries,
             'latestBiometric'      => $latestBiometric,
-            'recommendedRecipes'   => $recommendedRecipes,
+            'previousBiometric'   => $previousBiometric,
+           'recommendedRecipes'   => $recommendedRecipes,
         ]);
     }
 }

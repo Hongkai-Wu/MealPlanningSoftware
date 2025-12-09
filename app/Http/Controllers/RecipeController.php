@@ -32,7 +32,9 @@ class RecipeController extends Controller
             'calories'     => ['required', 'numeric', 'min:0'],
             'protein'      => ['required', 'numeric', 'min:0'],
             'carbs'        => ['required', 'numeric', 'min:0'],
-            'fat'          => ['required', 'numeric', 'min:0'],
+            'fat'          => ['required', 'numeric', 'min:0'], 
+            'fiber'        => 'nullable|numeric|min:0', 
+
             'description'  => ['nullable', 'string'],
 
             // 新增：碳足迹字段（可选）
@@ -48,10 +50,12 @@ class RecipeController extends Controller
             'protein'      => $data['protein'],
             'carbs'        => $data['carbs'],
             'fat'          => $data['fat'],
+           'fiber'        => $data['fiber'] ?? 0,
+          
             'description'  => $data['description'] ?? null,
         ]);
 
-        // 如果填写了 CO2，则创建碳足迹记录
+        
         if (!empty($data['co2_emissions'])) {
             CarbonFootprint::create([
                 'recipe_id'        => $recipe->id,
@@ -86,6 +90,7 @@ class RecipeController extends Controller
             'protein'      => ['required', 'numeric', 'min:0'],
             'carbs'        => ['required', 'numeric', 'min:0'],
             'fat'          => ['required', 'numeric', 'min:0'],
+           'fiber'        => 'nullable|numeric|min:0', 
             'description'  => ['nullable', 'string'],
 
             'co2_emissions'    => ['nullable', 'numeric', 'min:0'],
@@ -99,6 +104,7 @@ class RecipeController extends Controller
             'protein'      => $data['protein'],
             'carbs'        => $data['carbs'],
             'fat'          => $data['fat'],
+           'fiber'        => $data['fiber'] ?? 0,
             'description'  => $data['description'] ?? null,
         ]);
 
@@ -121,7 +127,7 @@ class RecipeController extends Controller
                 ]);
             }
         } else {
-            // 如果不再填写 CO2，就删除旧记录（保持数据干净）
+           
             if ($recipe->carbonFootprint) {
                 $recipe->carbonFootprint->delete();
             }

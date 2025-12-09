@@ -44,49 +44,47 @@
         @if($recipes->isEmpty())
             <p class="text-sm text-gray-500">You have no recipes yet. Click “Add new recipe” to create one.</p>
         @else
-            <table class="min-w-full text-sm">
-                <thead>
-                    <tr class="border-b">
-                        <th class="text-left py-2">Name</th>
-                        <th class="text-left py-2">Serving</th>
-                        <th class="text-left py-2">Calories</th>
-                        <th class="text-left py-2">Protein</th>
-                        <th class="text-left py-2">Carbs</th>
-                        <th class="text-left py-2">Fat</th>
-                        <th class="text-left py-2">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach($recipes as $recipe)
-                    <tr class="border-b">
-                        <td class="py-2 font-semibold">{{ $recipe->name }}</td>
-                        <td class="py-2">{{ $recipe->serving_size }}</td>
-                        <td class="py-2">{{ $recipe->calories }} kcal</td>
-                        <td class="py-2">{{ $recipe->protein }} g</td>
-                        <td class="py-2">{{ $recipe->carbs }} g</td>
-                        <td class="py-2">{{ $recipe->fat }} g</td>
-                        <td class="py-2 space-x-2">
-                            <a href="{{ route('recipes.edit', $recipe) }}"
-                               class="text-blue-600 hover:underline text-xs">
-                                Edit
-                            </a>
-                            <form action="{{ route('recipes.destroy', $recipe) }}"
-                                  method="POST"
-                                  class="inline"
-                                  onsubmit="return confirm('Delete this recipe?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"
-                                        class="text-red-600 hover:underline text-xs">
-                                    Delete
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                @endforeach
-                </tbody>
-            </table>
-        @endif
+             <table class="min-w-full bg-white rounded-lg overflow-hidden">
+    <thead class="bg-gray-100">
+        <tr>
+            <th class="py-2 px-3 text-left">Name</th>
+            <th class="py-2 px-3 text-left">Serving</th>
+            <th class="py-2 px-3 text-left">Calories</th>
+            <th class="py-2 px-3 text-left">Protein</th>
+            <th class="py-2 px-3 text-left">Carbs</th>
+            <th class="py-2 px-3 text-left">Fiber (g)</th>
+            <th class="py-2 px-3 text-left">Fat</th>
+            <th class="py-2 px-3 text-left">CO₂ (kg)</th>
+            <th class="py-2 px-3 text-left">Actions</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach ($recipes as $recipe)
+            <tr class="border-b">
+                <td class="py-2 px-3">{{ $recipe->name }}</td>
+                <td class="py-2 px-3">{{ $recipe->serving_size }}</td>
+                <td class="py-2 px-3">{{ $recipe->calories }} kcal</td>
+                <td class="py-2 px-3">{{ $recipe->protein }} g</td>
+                <td class="py-2 px-3">{{ $recipe->carbs }} g</td>
+                <td class="py-2 px-3">{{ $recipe->fiber }} g</td>
+                <td class="py-2 px-3">{{ $recipe->fat }} g</td>
+
+                <td class="py-2 px-3">
+                    {{ $recipe->carbonFootprint->co2_emissions ?? '-' }}
+                </td>
+
+                <td class="py-2 px-3">
+                    <a href="{{ route('recipes.edit', $recipe->id) }}" class="text-blue-600">Edit</a>
+                    <a href="{{ route('recipes.destroy', $recipe->id) }}"
+                       onclick="return confirm('Delete this recipe?')"
+                       class="text-red-600 ml-2">Delete</a>
+                </td>
+            </tr>
+        @endforeach
+    </tbody>
+</table>
+       @endif
     </section>
 </main>
 

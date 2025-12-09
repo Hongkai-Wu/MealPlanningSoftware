@@ -8,20 +8,43 @@ use Illuminate\Support\Facades\Auth;
 
 class BiometricController extends Controller
 {
-    // 列表：当前用户所有健康记录
-    public function index()
-    {
-        $biometrics = Biometric::where('user_id', Auth::id())
-            ->orderByDesc('measurement_date')
-            ->orderByDesc('created_at')
-            ->paginate(10);
+  
+   public function index()
+{
+    $user = Auth::user();
 
-        return view('biometrics.index', [
-            'biometrics' => $biometrics,
-        ]);
-    }
+    $measurements = Biometric::where('user_id', $user->id)
+        ->orderByDesc('measurement_date')
+        ->get();
 
-    // 显示创建表单
+  
+    $measurementsForChart = $measurements
+        ->filter(fn ($m) => !is_null($m->weight))
+        ->sortBy('measurement_date');
+
+    $weightDates = $measurementsForChart
+        ->pluck('measurement_date')
+        ->map(function ($date) {
+            // measurement_date 如果是 Carbon 就直接 format
+            return $date instanceof Carbon
+                ? $date->format('Y-m-d')
+                : (string) $date;
+        })
+        ->values()
+        ->all();
+
+    $weightValues = $measurementsForChart
+        ->pluck('weight')
+        ->values()
+        ->all();
+
+    return view('biometrics.index', [
+        'measurements'  => $measurements,
+        'weightDates'   => $weightDates,
+        'weightValues'  => $weightValues,
+    ]);
+}
+
     public function create()
     {
         return view('biometrics.create', [
@@ -29,7 +52,6 @@ class BiometricController extends Controller
         ]);
     }
 
-    // 保存新纪录
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -50,7 +72,7 @@ class BiometricController extends Controller
             ->with('success', 'Measurement added.');
     }
 
-    // 编辑表单
+  
     public function edit(Biometric $biometric)
     {
         if ($biometric->user_id !== Auth::id()) {
@@ -62,7 +84,7 @@ class BiometricController extends Controller
         ]);
     }
 
-    // 更新
+ 
     public function update(Request $request, Biometric $biometric)
     {
         if ($biometric->user_id !== Auth::id()) {
@@ -85,7 +107,7 @@ class BiometricController extends Controller
             ->with('success', 'Measurement updated.');
     }
 
-    // 删除
+   
     public function destroy(Biometric $biometric)
     {
         if ($biometric->user_id !== Auth::id()) {
